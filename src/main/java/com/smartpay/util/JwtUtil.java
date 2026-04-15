@@ -14,9 +14,9 @@ import java.util.Date;
 public class JwtUtil {
     private final SecretKey SECRET = Keys.hmacShaKeyFor("smartpay-secret-key-smartpay-secret-key".getBytes());
 
-    public String generateToken(String email){
+    public String generateToken(String email) {
         log.info("Generating JWT token for user: {}", email);
-        String token =  Jwts.builder()
+        String token = Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000))
@@ -24,5 +24,27 @@ public class JwtUtil {
                 .compact();
         log.info("JWT token generated successfully");
         return token;
+    }
+
+    public String extractToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(SECRET)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    private boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(SECRET)
+                    .build()
+                    .parseClaimsJws(token);
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
