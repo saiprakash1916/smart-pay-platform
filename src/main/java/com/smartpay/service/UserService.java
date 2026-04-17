@@ -2,6 +2,7 @@ package com.smartpay.service;
 
 import com.smartpay.dto.LoginRequest;
 import com.smartpay.dto.UserRequest;
+import com.smartpay.entity.Role;
 import com.smartpay.entity.User;
 import com.smartpay.repository.UserRepository;
 import com.smartpay.util.JwtUtil;
@@ -11,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -20,14 +22,15 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
-    public User registerUser(UserRequest request){
+    public User registerUser(UserRequest request) {
         log.info("Registering user with email: {}", request.getEmail());
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role("USER")
+                .role(Role.USER)
                 .createdAt(LocalDateTime.now())
                 .build();
         User savedUser = userRepository.save(user);
@@ -35,18 +38,23 @@ public class UserService {
         return savedUser;
     }
 
-    public String login(LoginRequest request){
+    public Map<String, String> login(LoginRequest request) {
         log.info("Login request received for email: {}", request.getEmail());
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> {
                     log.error("User not found: {}", request.getEmail());
                     return new RuntimeException("Invalid User");
                 });
-        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             log.error("Invalid password for user: {}", request.getEmail());
             throw new RuntimeException("Invalid Password");
         }
+
+        String accessToken = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
         log.info("Login successful for user: {}", request.getEmail());
-        return jwtUtil.generateToken(user.getEmail());
+
+        return Map.of("accessToken", accessToken,
+                "refreshToken", refreshToken);
     }
 }

@@ -14,10 +14,11 @@ import java.util.Date;
 public class JwtUtil {
     private final SecretKey SECRET = Keys.hmacShaKeyFor("smartpay-secret-key-smartpay-secret-key".getBytes());
 
-    public String generateToken(String email) {
+    public String generateToken(String email, String role) {
         log.info("Generating JWT token for user: {}", email);
         String token = Jwts.builder()
                 .setSubject(email)
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000))
                 .signWith(SECRET, SignatureAlgorithm.HS256)
@@ -26,13 +27,26 @@ public class JwtUtil {
         return token;
     }
 
-    public String extractToken(String token) {
+    public String extractEmail(String token) {
+        try{
+            return Jwts.parserBuilder()
+                    .setSigningKey(SECRET)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            return e.getClaims().getSubject();
+        }
+    }
+
+    public String extractRole(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(SECRET)
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
-                .getSubject();
+                .get("role", String.class);
     }
 
     private boolean validateToken(String token) {
