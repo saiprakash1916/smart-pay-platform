@@ -63,11 +63,6 @@ public class UserController {
         return "Logged out successfully";
     }
 
-    @GetMapping("/admin/dashboard")
-    public String adminApi() {
-        return "Admin access granted";
-    }
-
     @GetMapping("/home")
     public String roleApi() {
         return "User access granted";
