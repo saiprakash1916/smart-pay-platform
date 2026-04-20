@@ -53,7 +53,7 @@ GET /api/home
 
 #### Admin API
 ```aiignore
-GET /api/users/admin/dashboard
+GET /api/admin/dashboard
 ```
 
 #### Refresh Token
